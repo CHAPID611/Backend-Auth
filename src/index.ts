@@ -16,10 +16,14 @@ const app = express();
 const port = process.env.PORT || 4001;
 
 // Connect to MongoDB
+// Update MongoDB connection options
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/auth-db', {
   ssl: true,
   tls: true,
-  tlsAllowInvalidCertificates: true
+  tlsAllowInvalidCertificates: true,
+  serverSelectionTimeoutMS: 15000, // Increase timeout
+  socketTimeoutMS: 45000,          // Increase socket timeout
+  connectTimeoutMS: 15000,         // Connection timeout
 })
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Error connecting to MongoDB:', err));
@@ -39,6 +43,15 @@ const getUser = (token: string) => {
 interface MyContext {
   user: any;
 }
+
+// Add this before starting Apollo Server
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB connected successfully');
+});
 
 async function startServer() {
   const server = new ApolloServer<MyContext>({
